@@ -1,31 +1,39 @@
 import os
 import openai
-import telebot
-from dotenv import 
+from dotenv import load_dotenv
+from telegram import Update
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
-
-BOT_TOKEN = os.getenv("7505715870:AAEopIKBJcfbW3mvpS6vZ7_BnfesoSFN_PQ")
+# .env fayldan token va API kalitlarni yuklash
+load_dotenv()
+TELEGRAM_TOKEN = os.getenv("7505715870:AAEopIKBJcfbW3mvpS6vZ7_BnfesoSFN_PQ")
 OPENAI_API_KEY = os.getenv("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")
 
-bot = telebot.TeleBot(BOT_TOKEN)
-openai.api_key = OPENAI_API_KEY
+openai.api_key = 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
 
-@bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
-    bot.send_message(
-        message.chat.id,
-        "🧑‍⚖️ Salom! Men Yurist Botman. Menga yuridik savollar bering, men javob beraman."
-    )
+# Start komandasi uchun javob
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Assalomu alaykum! Men Yurist AI botman. Yuridik savolingizni yozing.")
 
-@bot.message_handler(func=lambda message: True)
-def handle_message(message):
-    prompt = f"Sen O'zbekiston qonunlariga asoslangan yuristsan. Quyidagi savolga yuridik asosda, tushunarli qilib javob ber:\n\n{message.text}"
-    
+# Matnli xabarlarga javob
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_message = update.message.text
+
+    # OpenAI javobini olish
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}]
+        model="gpt-3.5-turbo",  # agar sizda GPT-4 bo‘lsa, shu yerda almashtirishingiz mumkin
+        messages=[{"role": "user", "content": user_message}]
     )
-    reply = response['choices'][0]['message']['content']
-    bot.send_message(message.chat.id, reply)
 
-bot.polling()
+    bot_reply = response["choices"][0]["message"]["content"]
+    await update.message.reply_text(bot_reply)
+
+# Botni ishga tushirish
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    print("Bot ishga tushdi...")
+    app.run_polling()
