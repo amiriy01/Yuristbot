@@ -1,0 +1,2 @@
+# Yuristbot
+Savollarga javob olasiz
